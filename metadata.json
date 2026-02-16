@@ -1,0 +1,5 @@
+{
+  "name": "WhatsApp Email Visualizer",
+  "description": "A professional tool that converts Gmail HTML content into beautiful, shareable visual 'screenshots' for WhatsApp, including an updated Google Apps Script integration for your Gmail Add-on.",
+  "requestFramePermissions": []
+}
