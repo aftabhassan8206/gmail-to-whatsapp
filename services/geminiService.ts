@@ -2,9 +2,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { VisualSummary } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Dynamic initialization to ensure no crashes if environment variables are missing
+const getAiClient = () => {
+  const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
+  return new GoogleGenAI({ apiKey: apiKey || '' });
+};
 
 export const generateVisualSummary = async (html: string, subject: string): Promise<VisualSummary> => {
+  const ai = getAiClient();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Analyze this email (Subject: ${subject}) and extract a clean, professional visual summary for a "screenshot" card. 
@@ -34,5 +39,10 @@ export const generateVisualSummary = async (html: string, subject: string): Prom
     throw new Error("Failed to generate visual summary");
   }
 
-  return JSON.parse(response.text.trim());
+  try {
+    return JSON.parse(response.text.trim());
+  } catch (e) {
+    console.error("Failed to parse JSON response:", response.text);
+    throw new Error("The AI returned an invalid format. Please try again.");
+  }
 };
