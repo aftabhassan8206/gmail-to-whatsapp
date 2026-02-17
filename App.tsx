@@ -13,12 +13,12 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none uppercase">WA Visual Bridge</h1>
-              <p className="text-[10px] font-black text-green-600 tracking-widest mt-1 uppercase">Fidelity Engine v6.0</p>
+              <p className="text-[10px] font-black text-rose-600 tracking-widest mt-1 uppercase">Whitelisting Bridge v6.2</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-100">
-             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-             <span className="text-[9px] font-black text-green-700 uppercase tracking-widest">High-Fidelity Integration</span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-full border border-rose-100">
+             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
+             <span className="text-[9px] font-black text-rose-700 uppercase tracking-widest">Resolving Whitelist Error</span>
           </div>
         </div>
       </header>
@@ -26,34 +26,20 @@ const App: React.FC = () => {
       <main className="max-w-4xl mx-auto px-4 mt-12">
         <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100">
           <div className="max-w-2xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">The Exact <br/><span className="text-green-500">"No-Popup"</span> Workflow</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Fixing the <br/><span className="text-rose-600">urlFetchWhitelist</span> Error</h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              We've created a <b>Rendering Bridge</b>. Your Gmail Add-on sends data to your Vercel backend, which renders the exact HTML visual and sends it back to the sidebar as a professional image.
+              Google Workspace Add-ons require you to explicitly "approve" the URLs your script talks to. Use the new <b>appsscript.json</b> below to whitelist your Vercel renderer.
             </p>
           </div>
 
           <AppsScriptCode />
 
-          <div className="mt-16 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-             <h3 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest">Why use the Vercel Bridge?</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                   <h4 className="text-[11px] font-black text-gray-900 uppercase">100% Visual Accuracy</h4>
-                   <p className="text-[11px] text-gray-500">Unlike AI generation, the Vercel Bridge renders your actual CSS and React code for a pixel-perfect image.</p>
-                </div>
-                <div className="space-y-2">
-                   <h4 className="text-[11px] font-black text-gray-900 uppercase">Seamless Sidebar</h4>
-                   <p className="text-[11px] text-gray-500">The final image appears natively in the Gmail Card. Users never leave the inbox.</p>
-                </div>
-                <div className="space-y-2">
-                   <h4 className="text-[11px] font-black text-gray-900 uppercase">Secure Processing</h4>
-                   <p className="text-[11px] text-gray-500">All rendering happens on your private serverless function, keeping email data secure.</p>
-                </div>
-                <div className="space-y-2">
-                   <h4 className="text-[11px] font-black text-gray-900 uppercase">WhatsApp Optimized</h4>
-                   <p className="text-[11px] text-gray-500">The returned image is sized perfectly for WhatsApp story and message sharing.</p>
-                </div>
-             </div>
+          <div className="mt-16 bg-rose-50 p-8 rounded-[2rem] border border-rose-100">
+             <h3 className="text-sm font-black text-rose-900 mb-6 uppercase tracking-widest">Why is this required?</h3>
+             <p className="text-[11px] text-rose-700 leading-relaxed">
+               For security, Google requires developers to declare all external domains their add-on will interact with in the <code>urlFetchWhitelist</code>. 
+               The error occurs because your script tried to call your Vercel API without it being on the official approved list in the manifest.
+             </p>
           </div>
         </div>
       </main>

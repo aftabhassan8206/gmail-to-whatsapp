@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 
 export const AppsScriptCode: React.FC = () => {
-  const [copied, setCopied] = useState(false);
+  const [copiedGs, setCopiedGs] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('https://your-deployed-app.vercel.app');
 
   useEffect(() => {
@@ -11,9 +12,40 @@ export const AppsScriptCode: React.FC = () => {
     }
   }, []);
 
+  // IMPORTANT: The urlFetchWhitelist is required for all Google Workspace Add-ons.
+  const jsonManifest = `{
+  "timeZone": "Etc/GMT",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/script.external_request"
+  ],
+  "urlFetchWhitelist": [
+    "${currentUrl}/"
+  ],
+  "addOns": {
+    "common": {
+      "name": "WA Visual Bridge",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/wallpaper_black_24dp.png",
+      "useLocaleFromApp": true
+    },
+    "gmail": {
+      "contextualTriggers": [
+        {
+          "unconditional": {},
+          "onTriggerFunction": "onGmailMessageOpen"
+        }
+      ]
+    }
+  }
+}`;
+
   const gsCode = `/**
  * WA Visual Bridge - HIGH FIDELITY INTEGRATED MODE
- * Version 6.0: Exact HTML Rendering via Backend
+ * Version 6.2: Fixed Whitelist & Permission Scopes
  */
 
 function onGmailMessageOpen(e) {
@@ -29,7 +61,7 @@ function onGmailMessageOpen(e) {
     .setParameters({
       'subject': message.getSubject(),
       'sender': message.getFrom(),
-      'body': message.getPlainBody().substring(0, 3000) // Passing text or HTML
+      'body': message.getPlainBody().substring(0, 3000)
     });
 
   section.addWidget(CardService.newTextButton()
@@ -41,16 +73,7 @@ function onGmailMessageOpen(e) {
 }
 
 function renderExactVisualAction(e) {
-  // 1. Show a loading notification
-  var nav = CardService.newNavigation().pushCard(
-    CardService.newCardBuilder()
-      .addSection(CardService.newCardSection()
-        .addWidget(CardService.newTextParagraph().setText("<b>🚀 Rendering High-Fidelity Visual...</b><br>Please wait a moment.")))
-      .build()
-  );
-
-  // 2. Call your Vercel Render API
-  // You need to deploy a serverless function at /api/render
+  // Call your Vercel Render API
   var url = "${currentUrl}/api/render";
   var payload = {
     'subject': e.parameters.subject,
@@ -69,8 +92,7 @@ function renderExactVisualAction(e) {
     var response = UrlFetchApp.fetch(url, options);
     var data = JSON.parse(response.getContentText());
     
-    // The API should return a public URL or a persistent image link
-    // Gmail Cards require a publicly accessible URL for Images
+    // Ensure the API returns a 'imageUrl' property
     var imageUrl = data.imageUrl; 
 
     var resultCard = CardService.newCardBuilder();
@@ -94,49 +116,64 @@ function renderExactVisualAction(e) {
   }
 }`;
 
-  const handleCopy = (text: string) => {
+  const handleCopy = (text: string, type: 'gs' | 'json') => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (type === 'gs') setCopiedGs(true);
+    else setCopiedJson(true);
+    setTimeout(() => {
+      setCopiedGs(false);
+      setCopiedJson(false);
+    }, 2000);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-green-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+    <div className="space-y-8">
+      {/* Manifest Section - The Critical Fix */}
+      <div className="bg-rose-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
              <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Full Fidelity Mode</p>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 1: Fix Whitelist & Permissions</p>
           </div>
-          <h3 className="text-2xl font-black mb-4 leading-none">Exact Visual<br/>Rendering</h3>
-          <p className="text-xs text-green-100 leading-relaxed mb-6">
-            This mode uses your Vercel deployment as a <b>Server-Side Renderer</b>. It generates the exact HTML visual you saw before and sends it back to Gmail as a PNG.
+          <h3 className="text-2xl font-black mb-4 leading-tight">Whitelist Your Server</h3>
+          <p className="text-xs text-rose-100 leading-relaxed mb-6">
+            Google Add-ons require an <b>explicit urlFetchWhitelist</b>. Without this, your script will be blocked from calling the rendering API.
           </p>
+          
+          <div className="bg-black/20 p-4 rounded-2xl mb-6 space-y-2">
+             <p className="text-[10px] font-bold text-rose-200">REQUIRED FIX:</p>
+             <ol className="text-[10px] space-y-1 list-decimal ml-4 text-white/80">
+                <li>Go to <b>Project Settings</b> (Gear Icon).</li>
+                <li>Enable <b>"Show 'appsscript.json' manifest file"</b>.</li>
+                <li>In the editor, open <code>appsscript.json</code>.</li>
+                <li><b>REPLACE</b> the content with the whitelisted version below.</li>
+             </ol>
+          </div>
+
           <button 
-            onClick={() => handleCopy(gsCode)}
-            className="w-full py-4 bg-white text-green-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
+            onClick={() => handleCopy(jsonManifest, 'json')}
+            className="w-full py-4 bg-white text-rose-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
           >
-            {copied ? 'Copied Integration Code!' : 'Copy Script for Code.gs'}
+            {copiedJson ? 'Copied Whitelisted Manifest!' : 'Copy appsscript.json (Whitelisted)'}
           </button>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-gray-100">
-        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Next Step: Backend API</h4>
-        <div className="space-y-3">
-           <div className="flex gap-3">
-              <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">1</div>
-              <p className="text-[11px] text-gray-500">Create a file <code>api/render.ts</code> in your project.</p>
-           </div>
-           <div className="flex gap-3">
-              <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">2</div>
-              <p className="text-[11px] text-gray-500">Use a library like <code>puppeteer-core</code> or <code>satori</code> to render the HTML.</p>
-           </div>
-           <div className="flex gap-3">
-              <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">3</div>
-              <p className="text-[11px] text-gray-500">Return the PNG image URL back to the Apps Script.</p>
-           </div>
+      {/* Code Section */}
+      <div className="bg-green-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-4">
+             <div className="w-2 h-2 rounded-full bg-white opacity-50"></div>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 2: Update Script</p>
+          </div>
+          <h3 className="text-2xl font-black mb-4 leading-none">Apply Final Logic</h3>
+          <button 
+            onClick={() => handleCopy(gsCode, 'gs')}
+            className="w-full py-4 bg-white text-green-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
+          >
+            {copiedGs ? 'Copied Logic Code!' : 'Copy Code.gs'}
+          </button>
         </div>
       </div>
     </div>
