@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { EmailScreenshot } from './components/EmailScreenshot';
 import { EmailCard } from './components/EmailCard';
@@ -16,10 +16,36 @@ const App: React.FC = () => {
   const [aiSummary, setAiSummary] = useState<VisualSummary | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isEmbedded, setIsEmbedded] = useState(false);
 
-  const handleProcess = async () => {
-    if (!htmlContent || !subject) {
-      setError("Please provide both a subject and the email content.");
+  // Check for parameters from Gmail Add-on
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSubject = params.get('subject');
+    const urlBody = params.get('body');
+    const urlMode = params.get('mode') as 'raw' | 'ai';
+
+    if (urlSubject || urlBody) {
+      setIsEmbedded(true);
+      if (urlSubject) setSubject(decodeURIComponent(urlSubject));
+      if (urlBody) setHtmlContent(decodeURIComponent(urlBody));
+      if (urlMode) setMode(urlMode);
+      
+      // Auto-trigger processing if we have content
+      if (urlSubject && urlBody) {
+        // We need a small delay to ensure states are updated before render
+        setTimeout(() => handleProcess(decodeURIComponent(urlBody), decodeURIComponent(urlSubject), urlMode || 'raw'), 500);
+      }
+    }
+  }, []);
+
+  const handleProcess = async (manualHtml?: string, manualSubject?: string, manualMode?: 'raw' | 'ai') => {
+    const activeHtml = manualHtml || htmlContent;
+    const activeSubject = manualSubject || subject;
+    const activeMode = manualMode || mode;
+
+    if (!activeHtml || !activeSubject) {
+      setError("Content missing. Please provide a subject and email body.");
       return;
     }
 
@@ -28,42 +54,33 @@ const App: React.FC = () => {
     setCapturedImage(null);
 
     try {
-      if (mode === 'ai') {
-        const summary = await generateVisualSummary(htmlContent, subject);
+      if (activeMode === 'ai') {
+        const summary = await generateVisualSummary(activeHtml, activeSubject);
         setAiSummary(summary);
       }
       
-      // Essential delay for rendering and layout stabilization
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for React to mount the target element and for fonts/images to settle
+      await new Promise(resolve => setTimeout(resolve, 2500));
       if (document.fonts) await document.fonts.ready;
 
-      const elementId = mode === 'ai' ? 'email-screenshot-card' : 'email-capture-area';
+      const elementId = activeMode === 'ai' ? 'email-screenshot-card' : 'email-capture-area';
       const node = document.getElementById(elementId);
       
-      if (!node) throw new Error("Capture target not found in DOM.");
+      if (!node) throw new Error("Capture target not found in workspace.");
 
-      // High compatibility capture settings
       const dataUrl = await htmlToImage.toPng(node, {
         cacheBust: true,
         backgroundColor: '#ffffff',
         pixelRatio: 2,
-        skipFonts: true, // Crucial: external fonts often trigger CORS blocks
+        skipFonts: true,
         imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mN8/x8AAuMB8DtXNjkAAAAASUVORK5CYII=',
       });
 
       setCapturedImage(dataUrl);
       setStatus(ProcessingStatus.SUCCESS);
     } catch (err: any) {
-      console.error("Studio Capture Error:", err);
-      
-      let msg = "Failed to process email.";
-      if (err.isTrusted || (err.message && err.message.includes('CORS'))) {
-        msg = "Image Security Block: Some images in this email are protected by Gmail security. Try turning on 'Safe Mode' if the capture is failing.";
-      } else if (err.message) {
-        msg = err.message;
-      }
-      
-      setError(msg);
+      console.error("Capture Logic Error:", err);
+      setError(err.message || "Failed to render visual.");
       setStatus(ProcessingStatus.ERROR);
     }
   };
@@ -71,10 +88,87 @@ const App: React.FC = () => {
   const downloadImage = () => {
     if (!capturedImage) return;
     const link = document.createElement('a');
-    link.download = `Email_${Date.now()}.png`;
+    link.download = `WA_Bridge_${Date.now()}.png`;
     link.href = capturedImage;
     link.click();
   };
+
+  // If in embedded mode and processing or succeeded, show a minimal UI
+  if (isEmbedded && (status === ProcessingStatus.LOADING || status === ProcessingStatus.SUCCESS || status === ProcessingStatus.ERROR)) {
+    return (
+      <div className="min-h-screen bg-white p-4 flex flex-col items-center justify-center font-sans">
+        <div className="w-full max-w-lg">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#25D366] rounded-lg flex items-center justify-center text-white shadow-md">
+                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.135 0-4.128.833-5.637 2.346C4.885 10.031 4.05 12.022 4.05 14.155c0 1.341.34 2.645 1.012 3.811L3.922 22l4.133-1.085c1.233.673 2.618 1.026 3.974 1.026h.001c2.135 0 4.128-.833 5.637-2.346s2.345-3.513 2.345-5.64c0-2.136-.834-4.127-2.346-5.637s-3.513-2.146-5.635-2.146zm4.904 11.031c-.63 1.103-2.457 1.837-3.415 1.956-1.031.127-2.288.195-3.666-.234-2.616-.816-4.63-3.13-4.63-5.601 0-.961.341-1.921.961-2.58.558-.596 1.34-.942 2.115-.942.235 0 .47.05.648.067.432.043.648.083.896.643.321.72 1.042 2.508 1.135 2.686.095.178.16.384.043.6-.117.216-.178.35-.353.551-.176.201-.368.448-.526.6-.175.166-.358.347-.154.697.202.35.897 1.474 1.926 2.394 1.325 1.184 2.443 1.554 2.793 1.729.351.176.554.146.758-.083.204-.23.864-1.008 1.101-1.357.234-.351.469-.297.794-.176.326.121 2.067 1.018 2.422 1.196s.591.267.678.416c.088.148.088.853-.254 1.713z"/></svg>
+              </div>
+              <div>
+                <h1 className="text-sm font-black text-gray-900 tracking-tight leading-none uppercase">Visual Bridge</h1>
+                <p className="text-[8px] font-black text-green-600 tracking-widest mt-1">GMAIL OVERLAY MODE</p>
+              </div>
+            </div>
+            {status === ProcessingStatus.SUCCESS && (
+               <button onClick={() => setIsEmbedded(false)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600 transition uppercase tracking-widest">Edit Manually</button>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-3xl p-6 min-h-[300px] border border-gray-100 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+            {status === ProcessingStatus.LOADING && (
+              <div className="text-center space-y-4">
+                <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin mx-auto"></div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 animate-pulse">Converting Email to High-Res Image...</p>
+              </div>
+            )}
+
+            {status === ProcessingStatus.SUCCESS && capturedImage && (
+              <div className="w-full animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center">
+                <div className="relative group mb-8">
+                  <img src={capturedImage} className="max-w-full rounded-2xl shadow-2xl border border-gray-100" alt="Visual" />
+                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+                </div>
+                <div className="flex gap-3 w-full">
+                   <button 
+                     onClick={downloadImage}
+                     className="flex-1 py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition shadow-lg flex items-center justify-center gap-2"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                     Download
+                   </button>
+                   <button 
+                     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Visual Email Summary Shared from Bridge!')}`, '_blank')}
+                     className="flex-1 py-4 bg-[#25D366] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+                   >
+                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.135 0-4.128.833-5.637 2.346C4.885 10.031 4.05 12.022 4.05 14.155c0 1.341.34 2.645 1.012 3.811L3.922 22l4.133-1.085c1.233.673 2.618 1.026 3.974 1.026h.001c2.135 0 4.128-.833 5.637-2.346s2.345-3.513 2.345-5.64c0-2.136-.834-4.127-2.346-5.637s-3.513-2.146-5.635-2.146zm4.904 11.031c-.63 1.103-2.457 1.837-3.415 1.956-1.031.127-2.288.195-3.666-.234-2.616-.816-4.63-3.13-4.63-5.601 0-.961.341-1.921.961-2.58.558-.596 1.34-.942 2.115-.942.235 0 .47.05.648.067.432.043.648.083.896.643.321.72 1.042 2.508 1.135 2.686.095.178.16.384.043.6-.117.216-.178.35-.353.551-.176.201-.368.448-.526.6-.175.166-.358.347-.154.697.202.35.897 1.474 1.926 2.394 1.325 1.184 2.443 1.554 2.793 1.729.351.176.554.146.758-.083.204-.23.864-1.008 1.101-1.357.234-.351.469-.297.794-.176.326.121 2.067 1.018 2.422 1.196s.591.267.678.416c.088.148.088.853-.254 1.713z"/></svg>
+                     WhatsApp
+                   </button>
+                </div>
+              </div>
+            )}
+
+            {status === ProcessingStatus.ERROR && (
+               <div className="text-center space-y-4 max-w-xs">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-500">Render Failed</p>
+                <button onClick={() => setIsEmbedded(false)} className="px-4 py-2 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase">Try Manual Mode</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Hidden render nodes */}
+        <div id="capture-container">
+          {mode === 'raw' ? (
+            <EmailScreenshot html={htmlContent} subject={subject} stripImages={stripImages} />
+          ) : (
+            aiSummary && <EmailCard summary={aiSummary} subject={subject} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-24 font-sans text-gray-900 bg-[#f8f9fa]">
@@ -82,7 +176,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#25D366] rounded-xl flex items-center justify-center text-white shadow-lg rotate-2">
-               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.135 0-4.128.833-5.637 2.346C4.885 10.031 4.05 12.022 4.05 14.155c0 1.341.34 2.645 1.012 3.811L3.922 22l4.133-1.085c1.233.673 2.618 1.026 3.974 1.026h.001c2.135 0 4.128-.833 5.637-2.346s2.345-3.513 2.345-5.64c0-2.136-.834-4.127-2.346-5.637s-3.513-2.146-5.635-2.146zm4.904 11.031c-.63 1.103-2.457 1.837-3.415 1.956-1.031.127-2.288.195-3.666-.234-2.616-.816-4.63-3.13-4.63-5.601 0-.961.341-1.921.961-2.58.558-.596 1.34-.942 2.115-.942.235 0 .47.05.648.067.432.043.648.083.896.643.321.72 1.042 2.508 1.135 2.686.095.178.16.384.043.6-.117.216-.178.35-.353.551-.176.201-.368.448-.526.6-.175.166-.358.347-.154.697.202.35.897 1.474 1.926 2.394 1.325 1.184 2.443 1.554 2.793 1.729.351.176.554.146.758-.083.204-.23.864-1.008 1.101-1.357.234-.351.469-.297.794-.176.326.121 2.067 1.018 2.422 1.196s.591.267.678.416c.088.148.088.853-.254 1.713z"/></svg>
+               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.135 0-4.128.833-5.637 2.346C4.885 10.031 4.05 12.022 4.05 14.155c0 1.341.34 2.645 1.012 3.811L3.922 22l4.133-1.085c1.233.673 2.618 1.026 3.974 1.026h.001c2.135 0 4.128-.833-5.637 2.346s2.345-3.513 2.345-5.64c0-2.136-.834-4.127-2.346-5.637s-3.513-2.146-5.635-2.146zm4.904 11.031c-.63 1.103-2.457 1.837-3.415 1.956-1.031.127-2.288.195-3.666-.234-2.616-.816-4.63-3.13-4.63-5.601 0-.961.341-1.921.961-2.58.558-.596 1.34-.942 2.115-.942.235 0 .47.05.648.067.432.043.648.083.896.643.321.72 1.042 2.508 1.135 2.686.095.178.16.384.043.6-.117.216-.178.35-.353.551-.176.201-.368.448-.526.6-.175.166-.358.347-.154.697.202.35.897 1.474 1.926 2.394 1.325 1.184 2.443 1.554 2.793 1.729.351.176.554.146.758-.083.204-.23.864-1.008 1.101-1.357.234-.351.469-.297.794-.176.326.121 2.067 1.018 2.422 1.196s.591.267.678.416c.088.148.088.853-.254 1.713z"/></svg>
             </div>
             <div>
               <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none">WA Visual Bridge</h1>
@@ -150,7 +244,7 @@ const App: React.FC = () => {
               </div>
 
               <button 
-                onClick={handleProcess}
+                onClick={() => handleProcess()}
                 disabled={status === ProcessingStatus.LOADING}
                 className={`w-full py-4 rounded-xl font-black text-white transition-all shadow-lg flex items-center justify-center gap-2 uppercase tracking-widest text-xs ${mode === 'ai' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : 'bg-gray-900 hover:bg-black shadow-gray-900/20'} disabled:opacity-50`}
               >

@@ -6,7 +6,6 @@ export const AppsScriptCode: React.FC = () => {
   const [currentUrl, setCurrentUrl] = useState('https://your-deployed-app.web.app');
 
   useEffect(() => {
-    // Detect the actual URL where this app is hosted
     if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
       setCurrentUrl(window.location.origin);
     }
@@ -42,8 +41,7 @@ export const AppsScriptCode: React.FC = () => {
 }`;
 
   const gsCode = `/**
- * Professional WhatsApp Bridge for Gmail
- * This script is pre-configured for: ${currentUrl}
+ * Professional WhatsApp Bridge for Gmail (Integrated Mode)
  */
 function onGmailMessageOpen(e) {
   var cBuilder = CardService.newCardBuilder();
@@ -51,11 +49,14 @@ function onGmailMessageOpen(e) {
     var messageId = e.gmail.messageId;
     var message = GmailApp.getMessageById(messageId);
     var subject = message.getSubject() || '(No Subject)';
-    var plainBody = message.getPlainBody();
+    var body = message.getBody(); // Get HTML body
     
+    // Clean body for URL passing (limit size)
+    var bodySnippet = body.substring(0, 1500).replace(/\\n/g, ' '); 
+
     var header = CardService.newCardHeader()
       .setTitle('WhatsApp Bridge')
-      .setSubtitle('Visual Sharing Ready')
+      .setSubtitle('Visual Studio Pro')
       .setImageStyle(CardService.ImageStyle.CIRCLE)
       .setImageUrl('https://www.gstatic.com/images/icons/material/system/2x/share_black_48dp.png');
       
@@ -64,29 +65,40 @@ function onGmailMessageOpen(e) {
     var section = CardService.newCardSection();
 
     section.addWidget(CardService.newTextParagraph()
-      .setText("<b>Visual Mode:</b> Capture a high-quality screenshot of this email."));
+      .setText("<b>Direct Integrated Capture:</b> Convert this email into a shareable image instantly."));
     
-    var visualizerUrl = "${currentUrl}";
+    // Construct Auto-Bridge URL
+    var bridgeUrl = "${currentUrl}/?mode=raw" + 
+                    "&subject=" + encodeURIComponent(subject) + 
+                    "&body=" + encodeURIComponent(bodySnippet);
+
     var visualBtn = CardService.newTextButton()
-      .setText('✨ CAPTURE EMAIL IMAGE')
-      .setOpenLink(CardService.newOpenLink().setUrl(visualizerUrl))
+      .setText('📸 CAPTURE IN-APP')
+      .setOpenLink(CardService.newOpenLink()
+        .setUrl(bridgeUrl)
+        .setOpenAs(CardService.OpenAs.OVERLAY) // INTEGRATED MODE: Opens as a modal inside Gmail
+      )
       .setTextButtonStyle(CardService.TextButtonStyle.FILLED);
     
     section.addWidget(visualBtn);
 
     section.addWidget(CardService.newDivider());
     section.addWidget(CardService.newTextParagraph()
-      .setText("<b>Quick Summary:</b> Send text summary only."));
+      .setText("<b>AI Smart Card:</b> Create a professionally designed summary card."));
 
-    var shareText = '*' + subject + '*\\n\\n' + plainBody.substring(0, 500) + '...';
-    var whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(shareText);
-    
-    var textBtn = CardService.newTextButton()
-      .setText('SEND TEXT SUMMARY')
-      .setOpenLink(CardService.newOpenLink().setUrl(whatsappUrl))
+    var aiUrl = "${currentUrl}/?mode=ai" + 
+                "&subject=" + encodeURIComponent(subject) + 
+                "&body=" + encodeURIComponent(bodySnippet);
+                
+    var aiBtn = CardService.newTextButton()
+      .setText('✨ GENERATE AI CARD')
+      .setOpenLink(CardService.newOpenLink()
+        .setUrl(aiUrl)
+        .setOpenAs(CardService.OpenAs.OVERLAY)
+      )
       .setTextButtonStyle(CardService.TextButtonStyle.OUTLINED);
     
-    section.addWidget(textBtn);
+    section.addWidget(aiBtn);
 
     cBuilder.addSection(section);
   } catch (err) {
@@ -105,26 +117,28 @@ function onGmailMessageOpen(e) {
   return (
     <div className="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-          <p className="text-[10px] font-black text-amber-800 uppercase tracking-[0.2em] mb-1">Deployment Tip</p>
-          <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
-            Ensure this web app is <b>deployed</b> before copying these scripts. The URLs are synced to your current domain.
+        <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+          <p className="text-[10px] font-black text-green-800 uppercase tracking-[0.2em] mb-1">New: Integrated Mode</p>
+          <p className="text-[11px] text-green-700 leading-relaxed font-medium">
+            This updated script uses <b>OVERLAY</b> mode. The bridge will now open as a modal <i>inside</i> Gmail, not in a new tab.
           </p>
         </div>
-        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
-          <p className="text-[10px] font-black text-purple-800 uppercase tracking-[0.2em] mb-1">Why an external app?</p>
-          <p className="text-[11px] text-purple-700 leading-relaxed font-medium">
-            Google Apps Script lacks a <b>DOM engine</b>. This React app acts as a "Visual Renderer" to turn HTML into high-res images.
+        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+          <p className="text-[10px] font-black text-blue-800 uppercase tracking-[0.2em] mb-1">Auto-Processing</p>
+          <p className="text-[11px] text-blue-700 leading-relaxed font-medium">
+            Subject and body are now passed automatically. The capture will start the second you click.
           </p>
         </div>
       </div>
 
-      <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-4 flex items-center justify-between">
+      <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Bridge URL Configured</p>
-          <p className="text-sm font-bold text-blue-600 truncate max-w-[200px] sm:max-w-md">{currentUrl}</p>
+          <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Active Studio URL</p>
+          <p className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md font-mono">{currentUrl}</p>
         </div>
-        <div className="bg-blue-500 text-white text-[10px] px-2 py-1 rounded-full font-black">ACTIVE</div>
+        <div className="flex gap-2">
+           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+        </div>
       </div>
       
       <div>
@@ -132,10 +146,10 @@ function onGmailMessageOpen(e) {
           1. Manifest <span className="text-[10px] font-normal text-gray-400 font-mono">(appsscript.json)</span>
         </h3>
         <div className="relative group">
-          <pre className="bg-gray-900 text-green-400 p-5 rounded-2xl text-[11px] overflow-x-auto leading-relaxed border border-gray-800">
+          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[11px] overflow-x-auto leading-relaxed border border-gray-200">
             {manifestCode}
           </pre>
-          <button onClick={() => handleCopy(manifestCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase backdrop-blur-sm transition">
+          <button onClick={() => handleCopy(manifestCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-lg text-[10px] font-bold uppercase transition">
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
@@ -146,10 +160,10 @@ function onGmailMessageOpen(e) {
           2. Script <span className="text-[10px] font-normal text-gray-400 font-mono">(Code.gs)</span>
         </h3>
         <div className="relative group">
-          <pre className="bg-gray-900 text-green-400 p-5 rounded-2xl text-[11px] overflow-x-auto max-h-[300px] leading-relaxed border border-gray-800">
+          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[11px] overflow-x-auto max-h-[300px] leading-relaxed border border-gray-200">
             {gsCode}
           </pre>
-          <button onClick={() => handleCopy(gsCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase backdrop-blur-sm transition">
+          <button onClick={() => handleCopy(gsCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-lg text-[10px] font-bold uppercase transition">
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
