@@ -27,7 +27,7 @@ export const AppsScriptCode: React.FC = () => {
     "https://www.googleapis.com/auth/script.external_request"
   ],
   "gmail": {
-    "name": "WA Visualizer",
+    "name": "WA Bridge",
     "logoUrl": "https://www.gstatic.com/images/icons/material/system/2x/share_black_48dp.png",
     "contextualTriggers": [
       {
@@ -41,7 +41,8 @@ export const AppsScriptCode: React.FC = () => {
 }`;
 
   const gsCode = `/**
- * Professional WhatsApp Bridge for Gmail (Integrated Mode)
+ * Visual Bridge for Gmail - Fixed Length Integration
+ * This version prevents "URL cannot be used" errors by truncating data.
  */
 function onGmailMessageOpen(e) {
   var cBuilder = CardService.newCardBuilder();
@@ -49,34 +50,32 @@ function onGmailMessageOpen(e) {
     var messageId = e.gmail.messageId;
     var message = GmailApp.getMessageById(messageId);
     var subject = message.getSubject() || '(No Subject)';
-    var body = message.getBody(); // Get HTML body
     
-    // Clean body for URL passing (limit size)
-    var bodySnippet = body.substring(0, 1500).replace(/\\n/g, ' '); 
+    // CRITICAL FIX: Limit body size to 500 chars. 
+    // Gmail Add-ons reject URLs that are too long (approx 2KB total).
+    var bodySnippet = message.getPlainBody().substring(0, 500); 
 
     var header = CardService.newCardHeader()
       .setTitle('WhatsApp Bridge')
-      .setSubtitle('Visual Studio Pro')
-      .setImageStyle(CardService.ImageStyle.CIRCLE)
-      .setImageUrl('https://www.gstatic.com/images/icons/material/system/2x/share_black_48dp.png');
+      .setSubtitle('Visual Capture Studio');
       
     cBuilder.setHeader(header);
 
     var section = CardService.newCardSection();
 
     section.addWidget(CardService.newTextParagraph()
-      .setText("<b>Direct Integrated Capture:</b> Convert this email into a shareable image instantly."));
+      .setText("<b>Quick Capture:</b> Creates a visual summary based on the email snippet."));
     
-    // Construct Auto-Bridge URL
+    // Construct Safe URL
     var bridgeUrl = "${currentUrl}/?mode=raw" + 
-                    "&subject=" + encodeURIComponent(subject) + 
+                    "&subject=" + encodeURIComponent(subject.substring(0, 100)) + 
                     "&body=" + encodeURIComponent(bodySnippet);
 
     var visualBtn = CardService.newTextButton()
-      .setText('📸 CAPTURE IN-APP')
+      .setText('📸 OPEN CAPTURE STUDIO')
       .setOpenLink(CardService.newOpenLink()
         .setUrl(bridgeUrl)
-        .setOpenAs(CardService.OpenAs.OVERLAY) // INTEGRATED MODE: Opens as a modal inside Gmail
+        .setOpenAs(CardService.OpenAs.OVERLAY)
       )
       .setTextButtonStyle(CardService.TextButtonStyle.FILLED);
     
@@ -84,26 +83,12 @@ function onGmailMessageOpen(e) {
 
     section.addWidget(CardService.newDivider());
     section.addWidget(CardService.newTextParagraph()
-      .setText("<b>AI Smart Card:</b> Create a professionally designed summary card."));
-
-    var aiUrl = "${currentUrl}/?mode=ai" + 
-                "&subject=" + encodeURIComponent(subject) + 
-                "&body=" + encodeURIComponent(bodySnippet);
-                
-    var aiBtn = CardService.newTextButton()
-      .setText('✨ GENERATE AI CARD')
-      .setOpenLink(CardService.newOpenLink()
-        .setUrl(aiUrl)
-        .setOpenAs(CardService.OpenAs.OVERLAY)
-      )
-      .setTextButtonStyle(CardService.TextButtonStyle.OUTLINED);
-    
-    section.addWidget(aiBtn);
+      .setText("<font color='#666666'><i>Note: Large emails are truncated for security. For full HTML visuals, use manual mode in the studio.</i></font>"));
 
     cBuilder.addSection(section);
   } catch (err) {
     cBuilder.addSection(CardService.newCardSection()
-      .addWidget(CardService.newTextParagraph().setText('Error: ' + err.toString())));
+      .addWidget(CardService.newTextParagraph().setText('Add-on Error: ' + err.toString())));
   }
   return cBuilder.build();
 }`;
@@ -116,56 +101,37 @@ function onGmailMessageOpen(e) {
 
   return (
     <div className="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
-          <p className="text-[10px] font-black text-green-800 uppercase tracking-[0.2em] mb-1">New: Integrated Mode</p>
-          <p className="text-[11px] text-green-700 leading-relaxed font-medium">
-            This updated script uses <b>OVERLAY</b> mode. The bridge will now open as a modal <i>inside</i> Gmail, not in a new tab.
-          </p>
-        </div>
-        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-          <p className="text-[10px] font-black text-blue-800 uppercase tracking-[0.2em] mb-1">Auto-Processing</p>
-          <p className="text-[11px] text-blue-700 leading-relaxed font-medium">
-            Subject and body are now passed automatically. The capture will start the second you click.
-          </p>
-        </div>
+      <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mb-4">
+        <p className="text-[10px] font-black text-amber-800 uppercase tracking-[0.2em] mb-1">⚠️ Fix: Runtime Error</p>
+        <p className="text-[11px] text-amber-700 leading-relaxed font-medium">
+          If you saw "URL cannot be used", it was because the email HTML was too long for Google's URL limit. This updated code truncates the body safely to 500 characters.
+        </p>
       </div>
 
       <div className="bg-gray-900 p-4 rounded-2xl border border-gray-800 mb-4 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Active Studio URL</p>
+          <p className="text-[10px] font-black text-green-400 uppercase tracking-widest mb-1">Target Studio</p>
           <p className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md font-mono">{currentUrl}</p>
-        </div>
-        <div className="flex gap-2">
-           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
         </div>
       </div>
       
       <div>
-        <h3 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest flex items-center gap-2">
-          1. Manifest <span className="text-[10px] font-normal text-gray-400 font-mono">(appsscript.json)</span>
-        </h3>
+        <h3 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest">1. Update appsscript.json</h3>
         <div className="relative group">
-          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[11px] overflow-x-auto leading-relaxed border border-gray-200">
+          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[10px] overflow-x-auto border border-gray-200">
             {manifestCode}
           </pre>
-          <button onClick={() => handleCopy(manifestCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-lg text-[10px] font-bold uppercase transition">
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+          <button onClick={() => handleCopy(manifestCode)} className="absolute top-3 right-3 px-3 py-1 bg-gray-900 text-white rounded-lg text-[10px] font-bold">Copy</button>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest flex items-center gap-2">
-          2. Script <span className="text-[10px] font-normal text-gray-400 font-mono">(Code.gs)</span>
-        </h3>
+        <h3 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-widest">2. Update Code.gs</h3>
         <div className="relative group">
-          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[11px] overflow-x-auto max-h-[300px] leading-relaxed border border-gray-200">
+          <pre className="bg-gray-50 text-gray-700 p-5 rounded-2xl text-[10px] overflow-x-auto max-h-[250px] border border-gray-200">
             {gsCode}
           </pre>
-          <button onClick={() => handleCopy(gsCode)} className="absolute top-3 right-3 px-4 py-1.5 bg-gray-900 hover:bg-black text-white rounded-lg text-[10px] font-bold uppercase transition">
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+          <button onClick={() => handleCopy(gsCode)} className="absolute top-3 right-3 px-3 py-1 bg-gray-900 text-white rounded-lg text-[10px] font-bold">Copy</button>
         </div>
       </div>
     </div>
