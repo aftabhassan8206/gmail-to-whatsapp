@@ -24,7 +24,8 @@ export const AppsScriptCode: React.FC = () => {
     "https://www.googleapis.com/auth/script.locale"
   ],
   "urlFetchWhitelist": [
-    "${currentUrl}/"
+    "${currentUrl}/",
+    "https://wa.me/"
   ],
   "addOns": {
     "common": {
@@ -44,8 +45,12 @@ export const AppsScriptCode: React.FC = () => {
 }`;
 
   const gsCode = `/**
- * WA Visual Bridge - HIGH FIDELITY INTEGRATED MODE
- * Version 6.3: Complete Permission & Whitelist Patch
+ * WA Visual Bridge - DEFINITIVE PATCH v6.4
+ * 
+ * TO FIX PERMISSIONS: 
+ * 1. Update appsscript.json first.
+ * 2. Select 'forceAuthorization' in the toolbar and click 'Run'.
+ * 3. Grant permissions in the popup.
  */
 
 function onGmailMessageOpen(e) {
@@ -90,7 +95,6 @@ function renderExactVisualAction(e) {
   try {
     var response = UrlFetchApp.fetch(url, options);
     var data = JSON.parse(response.getContentText());
-    
     var imageUrl = data.imageUrl; 
 
     var resultCard = CardService.newCardBuilder();
@@ -98,7 +102,7 @@ function renderExactVisualAction(e) {
     
     resSection.addWidget(CardService.newImage().setImageUrl(imageUrl).setAltText("Exact Email Visual"));
     
-    var waUrl = "https://wa.me/?text=" + encodeURIComponent("Check out this email summary: " + e.parameters.subject);
+    var waUrl = "https://wa.me/?text=" + encodeURIComponent("Check out this email: " + e.parameters.subject);
     resSection.addWidget(CardService.newTextButton()
       .setText('SHARE TO WHATSAPP')
       .setOpenLink(CardService.newOpenLink().setUrl(waUrl)));
@@ -109,10 +113,20 @@ function renderExactVisualAction(e) {
 
   } catch (err) {
     return CardService.newActionResponseBuilder()
-        .setNotification(CardService.newNotification().setText("Render failed: " + err.toString()))
+        .setNotification(CardService.newNotification().setText("Permission Fail: " + err.toString()))
         .build();
   }
-}`;
+}
+
+/**
+ * UTILITY: RUN THIS ONCE MANUALLY IN THE EDITOR
+ * This forces Google to show you the "Review Permissions" popup.
+ */
+function forceAuthorization() {
+  UrlFetchApp.fetch("${currentUrl}/");
+  console.log("Authorization success!");
+}
+`;
 
   const handleCopy = (text: string, type: 'gs' | 'json') => {
     navigator.clipboard.writeText(text);
@@ -126,33 +140,24 @@ function renderExactVisualAction(e) {
 
   return (
     <div className="space-y-8">
-      {/* Manifest Section - The Critical Fix */}
-      <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+      {/* Manifest Section */}
+      <div className="bg-red-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden ring-4 ring-red-200">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
-             <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 1: Manifest Update (v6.3)</p>
+             <div className="w-2 h-2 rounded-full bg-white animate-ping"></div>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Urgent: Manifest Fix</p>
           </div>
-          <h3 className="text-2xl font-black mb-4 leading-tight">Authorize Locale & Whitelist</h3>
-          <p className="text-xs text-indigo-100 leading-relaxed mb-6">
-            Google Add-ons require specific authorization for "Locale" and "External Requests". This manifest includes the missing <code>script.locale</code> scope.
+          <h3 className="text-2xl font-black mb-4 leading-tight">Step 1: Clean appsscript.json</h3>
+          <p className="text-xs text-red-100 leading-relaxed mb-6">
+            Your manifest might be corrupted. <b>Delete everything</b> in your <code>appsscript.json</code> and paste this fresh version.
           </p>
           
-          <div className="bg-black/20 p-4 rounded-2xl mb-6 space-y-2">
-             <p className="text-[10px] font-bold text-indigo-200">FINAL PERMISSION FIX:</p>
-             <ol className="text-[10px] space-y-1 list-decimal ml-4 text-white/80">
-                <li>Open <code>appsscript.json</code> in your project editor.</li>
-                <li><b>REPLACE</b> the content with the updated version below.</li>
-                <li>Save and test the Add-on again.</li>
-             </ol>
-          </div>
-
           <button 
             onClick={() => handleCopy(jsonManifest, 'json')}
-            className="w-full py-4 bg-white text-indigo-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
+            className="w-full py-4 bg-white text-red-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg mb-4"
           >
-            {copiedJson ? 'Copied Final Manifest!' : 'Copy appsscript.json (Final Patch)'}
+            {copiedJson ? '✓ Copied Clean Manifest' : 'Copy appsscript.json (Clean)'}
           </button>
         </div>
       </div>
@@ -162,16 +167,24 @@ function renderExactVisualAction(e) {
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
              <div className="w-2 h-2 rounded-full bg-white opacity-50"></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 2: Logic Check</p>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 2: Script Logic</p>
           </div>
-          <h3 className="text-2xl font-black mb-4 leading-none">Script Confirmation</h3>
+          <h3 className="text-2xl font-black mb-4 leading-none">Step 2: Update Code.gs</h3>
+          <p className="text-xs text-green-100 leading-relaxed mb-6">
+            Paste this into your <code>Code.gs</code>. It includes a <b>forceAuthorization</b> helper to fix the prompt issue.
+          </p>
           <button 
             onClick={() => handleCopy(gsCode, 'gs')}
             className="w-full py-4 bg-white text-green-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
           >
-            {copiedGs ? 'Copied Logic Code!' : 'Copy Code.gs'}
+            {copiedGs ? '✓ Copied Logic' : 'Copy Code.gs'}
           </button>
         </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-3xl border-2 border-dashed border-gray-200 text-center">
+         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Final Step</p>
+         <p className="text-xs text-gray-600">After pasting both, click <b>Run &gt; forceAuthorization</b> in the Apps Script editor to trigger the final permission popup.</p>
       </div>
     </div>
   );

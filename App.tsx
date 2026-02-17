@@ -13,12 +13,12 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none uppercase">WA Visual Bridge</h1>
-              <p className="text-[10px] font-black text-indigo-600 tracking-widest mt-1 uppercase">Definitive Patch v6.3</p>
+              <p className="text-[10px] font-black text-red-600 tracking-widest mt-1 uppercase">Permission Rescue v6.4</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100">
-             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-             <span className="text-[9px] font-black text-indigo-700 uppercase tracking-widest">Resolving Script Locale Error</span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-red-50 rounded-full border border-red-100">
+             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+             <span className="text-[9px] font-black text-red-700 uppercase tracking-widest">Emergency Permission Reset</span>
           </div>
         </div>
       </header>
@@ -26,19 +26,26 @@ const App: React.FC = () => {
       <main className="max-w-4xl mx-auto px-4 mt-12">
         <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100">
           <div className="max-w-2xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Fixing the <br/><span className="text-indigo-600">script.locale</span> Authorization</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Hard Reset: <br/><span className="text-red-600">Permissions Required</span></h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Google Add-ons require specific scopes to access user settings like language/locale. This latest patch adds the <b>script.locale</b> scope and completes your <b>appsscript.json</b> whitelist.
+              Google has blocked your script from making external calls. This definitive patch includes the <b>external_request</b>, <b>locale</b>, and <b>whitelist</b> fixes in one clean slate.
             </p>
           </div>
 
           <AppsScriptCode />
 
-          <div className="mt-16 bg-indigo-50 p-8 rounded-[2rem] border border-indigo-100">
-             <h3 className="text-sm font-black text-indigo-900 mb-6 uppercase tracking-widest">Why is this final scope needed?</h3>
-             <p className="text-[11px] text-indigo-700 leading-relaxed">
-               When an Add-on uses <code>useLocaleFromApp</code>, it tries to detect the user's interface language. This action is considered a privacy-sensitive operation and requires the <code>script.locale</code> scope to be explicitly listed in your manifest's <code>oauthScopes</code> array.
-             </p>
+          <div className="mt-16 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
+             <h3 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest">Critical Troubleshooting</h3>
+             <div className="space-y-4">
+                <div className="flex gap-4">
+                   <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs flex-shrink-0">1</div>
+                   <p className="text-[11px] text-gray-600 leading-relaxed"><b>Manifest Corruption:</b> If your <code>appsscript.json</code> contains error messages (like "Render failed..."), it will never work. Delete the file content entirely and paste the new version.</p>
+                </div>
+                <div className="flex gap-4">
+                   <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs flex-shrink-0">2</div>
+                   <p className="text-[11px] text-gray-600 leading-relaxed"><b>The "Force" Run:</b> Even with a perfect manifest, Google won't ask for permission unless you trigger a sensitive function. Use the <code>forceAuthorization</code> function in the editor toolbar.</p>
+                </div>
+             </div>
           </div>
         </div>
       </main>
