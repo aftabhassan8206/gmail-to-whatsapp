@@ -13,12 +13,12 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none uppercase">WA Visual Bridge</h1>
-              <p className="text-[10px] font-black text-rose-600 tracking-widest mt-1 uppercase">Whitelisting Bridge v6.2</p>
+              <p className="text-[10px] font-black text-indigo-600 tracking-widest mt-1 uppercase">Definitive Patch v6.3</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-full border border-rose-100">
-             <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
-             <span className="text-[9px] font-black text-rose-700 uppercase tracking-widest">Resolving Whitelist Error</span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100">
+             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+             <span className="text-[9px] font-black text-indigo-700 uppercase tracking-widest">Resolving Script Locale Error</span>
           </div>
         </div>
       </header>
@@ -26,19 +26,18 @@ const App: React.FC = () => {
       <main className="max-w-4xl mx-auto px-4 mt-12">
         <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-gray-100">
           <div className="max-w-2xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Fixing the <br/><span className="text-rose-600">urlFetchWhitelist</span> Error</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Fixing the <br/><span className="text-indigo-600">script.locale</span> Authorization</h2>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Google Workspace Add-ons require you to explicitly "approve" the URLs your script talks to. Use the new <b>appsscript.json</b> below to whitelist your Vercel renderer.
+              Google Add-ons require specific scopes to access user settings like language/locale. This latest patch adds the <b>script.locale</b> scope and completes your <b>appsscript.json</b> whitelist.
             </p>
           </div>
 
           <AppsScriptCode />
 
-          <div className="mt-16 bg-rose-50 p-8 rounded-[2rem] border border-rose-100">
-             <h3 className="text-sm font-black text-rose-900 mb-6 uppercase tracking-widest">Why is this required?</h3>
-             <p className="text-[11px] text-rose-700 leading-relaxed">
-               For security, Google requires developers to declare all external domains their add-on will interact with in the <code>urlFetchWhitelist</code>. 
-               The error occurs because your script tried to call your Vercel API without it being on the official approved list in the manifest.
+          <div className="mt-16 bg-indigo-50 p-8 rounded-[2rem] border border-indigo-100">
+             <h3 className="text-sm font-black text-indigo-900 mb-6 uppercase tracking-widest">Why is this final scope needed?</h3>
+             <p className="text-[11px] text-indigo-700 leading-relaxed">
+               When an Add-on uses <code>useLocaleFromApp</code>, it tries to detect the user's interface language. This action is considered a privacy-sensitive operation and requires the <code>script.locale</code> scope to be explicitly listed in your manifest's <code>oauthScopes</code> array.
              </p>
           </div>
         </div>

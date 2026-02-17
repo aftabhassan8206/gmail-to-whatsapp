@@ -12,7 +12,6 @@ export const AppsScriptCode: React.FC = () => {
     }
   }, []);
 
-  // IMPORTANT: The urlFetchWhitelist is required for all Google Workspace Add-ons.
   const jsonManifest = `{
   "timeZone": "Etc/GMT",
   "dependencies": {},
@@ -21,7 +20,8 @@ export const AppsScriptCode: React.FC = () => {
   "oauthScopes": [
     "https://www.googleapis.com/auth/gmail.addons.execute",
     "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/script.external_request"
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.locale"
   ],
   "urlFetchWhitelist": [
     "${currentUrl}/"
@@ -45,7 +45,7 @@ export const AppsScriptCode: React.FC = () => {
 
   const gsCode = `/**
  * WA Visual Bridge - HIGH FIDELITY INTEGRATED MODE
- * Version 6.2: Fixed Whitelist & Permission Scopes
+ * Version 6.3: Complete Permission & Whitelist Patch
  */
 
 function onGmailMessageOpen(e) {
@@ -73,7 +73,6 @@ function onGmailMessageOpen(e) {
 }
 
 function renderExactVisualAction(e) {
-  // Call your Vercel Render API
   var url = "${currentUrl}/api/render";
   var payload = {
     'subject': e.parameters.subject,
@@ -92,7 +91,6 @@ function renderExactVisualAction(e) {
     var response = UrlFetchApp.fetch(url, options);
     var data = JSON.parse(response.getContentText());
     
-    // Ensure the API returns a 'imageUrl' property
     var imageUrl = data.imageUrl; 
 
     var resultCard = CardService.newCardBuilder();
@@ -129,33 +127,32 @@ function renderExactVisualAction(e) {
   return (
     <div className="space-y-8">
       {/* Manifest Section - The Critical Fix */}
-      <div className="bg-rose-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+      <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
              <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 1: Fix Whitelist & Permissions</p>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 1: Manifest Update (v6.3)</p>
           </div>
-          <h3 className="text-2xl font-black mb-4 leading-tight">Whitelist Your Server</h3>
-          <p className="text-xs text-rose-100 leading-relaxed mb-6">
-            Google Add-ons require an <b>explicit urlFetchWhitelist</b>. Without this, your script will be blocked from calling the rendering API.
+          <h3 className="text-2xl font-black mb-4 leading-tight">Authorize Locale & Whitelist</h3>
+          <p className="text-xs text-indigo-100 leading-relaxed mb-6">
+            Google Add-ons require specific authorization for "Locale" and "External Requests". This manifest includes the missing <code>script.locale</code> scope.
           </p>
           
           <div className="bg-black/20 p-4 rounded-2xl mb-6 space-y-2">
-             <p className="text-[10px] font-bold text-rose-200">REQUIRED FIX:</p>
+             <p className="text-[10px] font-bold text-indigo-200">FINAL PERMISSION FIX:</p>
              <ol className="text-[10px] space-y-1 list-decimal ml-4 text-white/80">
-                <li>Go to <b>Project Settings</b> (Gear Icon).</li>
-                <li>Enable <b>"Show 'appsscript.json' manifest file"</b>.</li>
-                <li>In the editor, open <code>appsscript.json</code>.</li>
-                <li><b>REPLACE</b> the content with the whitelisted version below.</li>
+                <li>Open <code>appsscript.json</code> in your project editor.</li>
+                <li><b>REPLACE</b> the content with the updated version below.</li>
+                <li>Save and test the Add-on again.</li>
              </ol>
           </div>
 
           <button 
             onClick={() => handleCopy(jsonManifest, 'json')}
-            className="w-full py-4 bg-white text-rose-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
+            className="w-full py-4 bg-white text-indigo-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
           >
-            {copiedJson ? 'Copied Whitelisted Manifest!' : 'Copy appsscript.json (Whitelisted)'}
+            {copiedJson ? 'Copied Final Manifest!' : 'Copy appsscript.json (Final Patch)'}
           </button>
         </div>
       </div>
@@ -165,9 +162,9 @@ function renderExactVisualAction(e) {
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
              <div className="w-2 h-2 rounded-full bg-white opacity-50"></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 2: Update Script</p>
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Step 2: Logic Check</p>
           </div>
-          <h3 className="text-2xl font-black mb-4 leading-none">Apply Final Logic</h3>
+          <h3 className="text-2xl font-black mb-4 leading-none">Script Confirmation</h3>
           <button 
             onClick={() => handleCopy(gsCode, 'gs')}
             className="w-full py-4 bg-white text-green-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition shadow-lg"
