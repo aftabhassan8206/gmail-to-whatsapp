@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { EmailScreenshot } from './components/EmailScreenshot';
 import { EmailCard } from './components/EmailCard';
@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
   const [mode, setMode] = useState<'raw' | 'ai'>('raw');
+  const [stripImages, setStripImages] = useState(false);
   const [status, setStatus] = useState<ProcessingStatus>(ProcessingStatus.IDLE);
   const [aiSummary, setAiSummary] = useState<VisualSummary | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -32,8 +33,8 @@ const App: React.FC = () => {
         setAiSummary(summary);
       }
       
-      // Wait for React to render the component and for fonts to load
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Essential delay for rendering and layout stabilization
+      await new Promise(resolve => setTimeout(resolve, 2000));
       if (document.fonts) await document.fonts.ready;
 
       const elementId = mode === 'ai' ? 'email-screenshot-card' : 'email-capture-area';
@@ -41,17 +42,28 @@ const App: React.FC = () => {
       
       if (!node) throw new Error("Capture target not found in DOM.");
 
+      // High compatibility capture settings
       const dataUrl = await htmlToImage.toPng(node, {
         cacheBust: true,
         backgroundColor: '#ffffff',
         pixelRatio: 2,
+        skipFonts: true, // Crucial: external fonts often trigger CORS blocks
+        imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mN8/x8AAuMB8DtXNjkAAAAASUVORK5CYII=',
       });
 
       setCapturedImage(dataUrl);
       setStatus(ProcessingStatus.SUCCESS);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to process email.");
+      console.error("Studio Capture Error:", err);
+      
+      let msg = "Failed to process email.";
+      if (err.isTrusted || (err.message && err.message.includes('CORS'))) {
+        msg = "Image Security Block: Some images in this email are protected by Gmail security. Try turning on 'Safe Mode' if the capture is failing.";
+      } else if (err.message) {
+        msg = err.message;
+      }
+      
+      setError(msg);
       setStatus(ProcessingStatus.ERROR);
     }
   };
@@ -59,7 +71,7 @@ const App: React.FC = () => {
   const downloadImage = () => {
     if (!capturedImage) return;
     const link = document.createElement('a');
-    link.download = `Email_Visual_${Date.now()}.png`;
+    link.download = `Email_${Date.now()}.png`;
     link.href = capturedImage;
     link.click();
   };
@@ -74,23 +86,18 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none">WA Visual Bridge</h1>
-              <p className="text-[9px] uppercase font-black text-green-600 tracking-widest mt-1">AI-Powered Rendering</p>
+              <p className="text-[9px] uppercase font-black text-green-600 tracking-widest mt-1">Capture Studio</p>
             </div>
-          </div>
-          <div className="flex gap-4">
-             <a href="#setup" className="text-[11px] font-bold text-gray-500 hover:text-green-600 transition uppercase tracking-widest">Setup Add-on</a>
-             <a href="#hosting" className="text-[11px] font-bold text-gray-500 hover:text-blue-600 transition uppercase tracking-widest">How to Host</a>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Configuration */}
         <div className="lg:col-span-5 space-y-8">
           <section className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
             <h2 className="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center gap-2">
               <span className="w-1.5 h-4 bg-green-500 rounded-full"></span>
-              Input Content
+              Bridge Composer
             </h2>
             
             <div className="space-y-4">
@@ -108,18 +115,37 @@ const App: React.FC = () => {
                 className="w-full h-48 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition font-mono text-xs leading-relaxed"
               />
 
+              <div className={`p-4 rounded-xl border transition-all ${stripImages ? 'bg-green-50 border-green-100' : 'bg-blue-50 border-blue-100'}`}>
+                <div className="flex items-center justify-between mb-2">
+                   <div className="flex flex-col">
+                     <span className={`text-[10px] font-black uppercase tracking-tight ${stripImages ? 'text-green-800' : 'text-blue-800'}`}>
+                       {stripImages ? '✅ Safe Mode Active' : 'Normal Mode'}
+                     </span>
+                     <span className="text-[9px] text-gray-500 leading-none mt-1">
+                       {stripImages ? 'External images are removed for stability.' : 'Attempting to load images from email.'}
+                     </span>
+                   </div>
+                   <button 
+                    onClick={() => setStripImages(!stripImages)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${stripImages ? 'bg-green-500' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${stripImages ? 'left-7' : 'left-1'}`}></div>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
                 <button 
                   onClick={() => setMode('raw')}
                   className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${mode === 'raw' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                 >
-                  Raw Capture
+                  Full View
                 </button>
                 <button 
                   onClick={() => setMode('ai')}
                   className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${mode === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                 >
-                  ✨ AI Summary
+                  ✨ AI Card
                 </button>
               </div>
 
@@ -130,61 +156,44 @@ const App: React.FC = () => {
               >
                 {status === ProcessingStatus.LOADING ? (
                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : mode === 'ai' ? 'Generate AI Visual' : 'Capture Raw View'}
+                ) : mode === 'ai' ? 'Generate AI Visual' : 'Render Email Image'}
               </button>
 
-              {error && <p className="text-[10px] text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-100 uppercase tracking-tighter">{error}</p>}
+              {error && (
+                <div className="bg-red-50 p-4 rounded-xl border border-red-100 animate-in fade-in slide-in-from-top-2">
+                  <p className="text-[10px] text-red-600 font-black uppercase tracking-tight mb-2">Capture Error</p>
+                  <p className="text-[11px] text-red-500 font-medium leading-tight">{error}</p>
+                </div>
+              )}
             </div>
           </section>
 
-          <section id="setup" className="scroll-mt-24">
+          <section id="setup">
             <h2 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest flex items-center gap-2">
               <span className="w-1.5 h-4 bg-blue-500 rounded-full"></span>
-              Google Apps Script Code
+              Apps Script Setup
             </h2>
             <AppsScriptCode />
           </section>
-
-          <section id="hosting" className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-3xl text-white scroll-mt-24">
-            <h2 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              How to Host (Free)
-            </h2>
-            <ul className="space-y-4 text-[11px] text-gray-400">
-               <li className="flex gap-3">
-                 <span className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shrink-0">1</span>
-                 <p>Create an account on <b>Vercel.com</b> or <b>Netlify.com</b>.</p>
-               </li>
-               <li className="flex gap-3">
-                 <span className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shrink-0">2</span>
-                 <p>Upload this code folder or connect your GitHub repository.</p>
-               </li>
-               <li className="flex gap-3">
-                 <span className="w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shrink-0">3</span>
-                 <p>Once deployed, your app will have a URL like <code>your-app.vercel.app</code>. The scripts above will update automatically!</p>
-               </li>
-            </ul>
-          </section>
         </div>
 
-        {/* Right: Studio */}
         <div className="lg:col-span-7">
           <div className="bg-white rounded-[2.5rem] p-4 lg:p-8 min-h-[500px] border border-gray-100 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute top-4 right-6 text-[9px] font-black text-gray-300 uppercase tracking-widest">Preview Studio</div>
+            <div className="absolute top-4 right-6 text-[9px] font-black text-gray-300 uppercase tracking-widest">Studio Workspace</div>
             
             {status === ProcessingStatus.IDLE && (
               <div className="text-center space-y-4 opacity-30">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Canvas Ready</p>
+                <p className="text-xs font-black uppercase tracking-widest text-gray-400">Canvas Ready</p>
               </div>
             )}
 
             {status === ProcessingStatus.LOADING && (
               <div className="text-center space-y-4">
                 <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin mx-auto"></div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Processing Visuals...</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Rendering high-res capture...</p>
               </div>
             )}
 
@@ -199,30 +208,35 @@ const App: React.FC = () => {
                      Download PNG
                    </button>
                    <button 
-                     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Check out this visual email summary! (Attach image manually)')}`, '_blank')}
+                     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Shared from WA Visual Bridge Studio')}`, '_blank')}
                      className="flex-1 py-3 bg-[#25D366] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition shadow-lg shadow-green-500/20"
                    >
-                     Share to WhatsApp
+                     WhatsApp Share
                    </button>
                 </div>
               </div>
             )}
+
+            {status === ProcessingStatus.ERROR && (
+               <div className="text-center space-y-4 max-w-xs">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
+                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-red-500">Capture Blocked</p>
+                <p className="text-[10px] text-gray-400">Security restrictions prevented image generation. Please use <b>Safe Mode</b>.</p>
+              </div>
+            )}
           </div>
 
-          {/* Hidden Capture Area */}
-          <div className="fixed top-0 left-[-9999px]">
+          <div id="capture-container">
             {mode === 'raw' ? (
-              <EmailScreenshot html={htmlContent} subject={subject} />
+              <EmailScreenshot html={htmlContent} subject={subject} stripImages={stripImages} />
             ) : (
               aiSummary && <EmailCard summary={aiSummary} subject={subject} />
             )}
           </div>
         </div>
       </main>
-
-      <footer className="max-w-7xl mx-auto px-4 mt-20 pt-10 border-t border-gray-100 text-center">
-         <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Built for Gmail Add-on v2 & AI Visual Bridge Architecture</p>
-      </footer>
     </div>
   );
 };
