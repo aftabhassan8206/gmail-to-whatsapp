@@ -1,10 +1,13 @@
 
 export interface EmailContent {
   subject: string;
-  body: string;
-  isHtml: boolean;
+  sender: string;
+  html: string;
 }
 
+/**
+ * Interface representing the visual metadata extracted from an email
+ */
 export interface VisualSummary {
   headline: string;
   senderName: string;
@@ -16,7 +19,7 @@ export interface VisualSummary {
 
 export enum ProcessingStatus {
   IDLE = 'IDLE',
-  LOADING = 'LOADING',
+  CAPTURING = 'CAPTURING',
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR'
 }

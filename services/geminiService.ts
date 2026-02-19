@@ -2,16 +2,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { VisualSummary } from "../types";
 
-const getAiClient = () => {
-  const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
-  return new GoogleGenAI({ apiKey: apiKey || '' });
-};
-
 /**
- * Generates a structured summary for the card UI
+ * Generates a structured summary for the card UI using Gemini 3 Flash.
+ * This function follows the latest @google/genai guidelines for JSON output.
  */
 export const generateVisualSummary = async (html: string, subject: string): Promise<VisualSummary> => {
-  const ai = getAiClient();
+  // Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  // Create a new GoogleGenAI instance right before making an API call.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Analyze this email (Subject: ${subject}) and extract a clean, professional visual summary. 
@@ -21,28 +20,40 @@ export const generateVisualSummary = async (html: string, subject: string): Prom
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          headline: { type: Type.STRING },
-          senderName: { type: Type.STRING },
-          summary: { type: Type.STRING },
-          bulletPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-          themeColor: { type: Type.STRING },
-          callToAction: { type: Type.STRING }
+          headline: { type: Type.STRING, description: "A catchy short headline for the email" },
+          senderName: { type: Type.STRING, description: "The professional name of the sender" },
+          summary: { type: Type.STRING, description: "A 1-2 sentence high-level summary" },
+          bulletPoints: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-4 key points from the email" },
+          themeColor: { type: Type.STRING, description: "A hex color code that fits the brand" },
+          callToAction: { type: Type.STRING, description: "Optional call to action text" }
         },
+        propertyOrdering: ["headline", "senderName", "summary", "bulletPoints", "themeColor", "callToAction"],
         required: ["headline", "senderName", "summary", "bulletPoints", "themeColor"]
       }
     }
   });
 
-  if (!response.text) throw new Error("AI Summary failed");
-  return JSON.parse(response.text.trim());
+  // Use the .text property directly as per guidelines (not .text())
+  const text = response.text;
+  if (!text) throw new Error("AI Summary failed to generate a response.");
+  
+  try {
+    return JSON.parse(text.trim());
+  } catch (error) {
+    console.error("Failed to parse Gemini JSON response:", text);
+    throw new Error("Invalid response format from AI service.");
+  }
 };
 
 /**
  * Generates a literal PNG image using Gemini 2.5 Flash Image.
- * This is used for the "In-Addon" experience where no browser tab can be opened.
+ * This is used for generating shared assets directly within the bridge.
  */
 export const generateVisualImage = async (subject: string, body: string): Promise<string> => {
-  const ai = getAiClient();
+  // Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  // Create a new GoogleGenAI instance right before making an API call.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   const prompt = `Create a professional, high-resolution infographic-style summary card for an email.
   Subject: ${subject}
   Content: ${body.substring(0, 1000)}
@@ -57,7 +68,7 @@ export const generateVisualImage = async (subject: string, body: string): Promis
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
-    contents: [{ parts: [{ text: prompt }] }],
+    contents: { parts: [{ text: prompt }] },
     config: {
       imageConfig: {
         aspectRatio: "9:16"
@@ -65,11 +76,17 @@ export const generateVisualImage = async (subject: string, body: string): Promis
     }
   });
 
-  for (const part of response.candidates[0].content.parts) {
-    if (part.inlineData) {
-      return `data:image/png;base64,${part.inlineData.data}`;
+  // Iterate through all parts to find the image part as per guidelines
+  if (response.candidates && response.candidates[0].content.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        const base64EncodeString: string = part.inlineData.data;
+        return `data:image/png;base64,${base64EncodeString}`;
+      } else if (part.text) {
+        console.debug("Model response text:", part.text);
+      }
     }
   }
   
-  throw new Error("No image part returned from Gemini");
+  throw new Error("No image data was returned by the model.");
 };

@@ -45,9 +45,8 @@ export const AppsScriptCode: React.FC = () => {
 }`;
 
   const gsCode = `/**
- * Visual Bridge Bridge Script
- * This script launches the Visual Studio where you can 1:1 convert 
- * your email HTML into a high-quality PNG for WhatsApp.
+ * Visual Bridge Bridge Launcher
+ * Launch the conversion Studio from any open Gmail message.
  */
 
 function onGmailMessageOpen(e) {
@@ -56,14 +55,15 @@ function onGmailMessageOpen(e) {
   var message = GmailApp.getMessageById(e.gmail.messageId);
 
   section.addWidget(CardService.newTextParagraph()
-    .setText("<b>Visual Bridge Studio</b><br>Open the studio to render this email as a professional visual card."));
+    .setText("<b>Visual Bridge Studio</b><br>Transfer this email to the converter to create a professional WhatsApp visual card."));
 
+  // Build the launcher URL with metadata
   var studioUrl = "${currentUrl}/" + 
                   "?subject=" + encodeURIComponent(message.getSubject()) + 
                   "&sender=" + encodeURIComponent(message.getFrom().replace(/<.*>/, '').trim());
 
   section.addWidget(CardService.newTextButton()
-    .setText('🚀 OPEN IN VISUAL STUDIO')
+    .setText('🚀 OPEN IN STUDIO')
     .setOpenLink(CardService.newOpenLink().setUrl(studioUrl))
     .setTextButtonStyle(CardService.TextButtonStyle.FILLED));
 
@@ -82,30 +82,36 @@ function onGmailMessageOpen(e) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 text-white shadow-2xl">
-        <h3 className="text-xl font-black mb-4">The Manifest</h3>
-        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-          Update your <code>appsscript.json</code> to allow the bridge to open the Studio.
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="bg-zinc-900/50 p-10 rounded-[2.5rem] border border-white/5 text-white shadow-2xl">
+        <div className="flex items-center gap-3 mb-6">
+           <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-black border border-white/10">01</div>
+           <h3 className="text-xl font-black uppercase tracking-tight">The Manifest</h3>
+        </div>
+        <p className="text-xs text-zinc-500 mb-8 leading-relaxed font-medium">
+          Whitelist your Vercel deployment URL in <code>appsscript.json</code> to allow the Gmail Add-on to link to this Studio.
         </p>
         <button 
           onClick={() => handleCopy(jsonManifest, 'json')}
-          className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition"
+          className="w-full py-4 bg-zinc-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-700 transition border border-white/5"
         >
-          {copiedJson ? '✓ COPIED' : 'COPY MANIFEST'}
+          {copiedJson ? '✓ COPIED JSON' : 'Copy Manifest'}
         </button>
       </div>
 
-      <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-white/5 text-white shadow-2xl">
-        <h3 className="text-xl font-black mb-4">The Bridge Script</h3>
-        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-          Replace your <code>Code.gs</code> with this simple launcher. It passes the email metadata to the Studio for you.
+      <div className="bg-zinc-900/50 p-10 rounded-[2.5rem] border border-white/5 text-white shadow-2xl">
+        <div className="flex items-center gap-3 mb-6">
+           <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-black text-[10px] font-black">02</div>
+           <h3 className="text-xl font-black uppercase tracking-tight">Launcher Code</h3>
+        </div>
+        <p className="text-xs text-zinc-500 mb-8 leading-relaxed font-medium">
+          Paste this into your <code>Code.gs</code>. It adds a button to Gmail that automatically loads the subject and sender into the converter.
         </p>
         <button 
           onClick={() => handleCopy(gsCode, 'gs')}
-          className="w-full py-4 bg-emerald-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition"
+          className="w-full py-4 bg-emerald-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-400 transition shadow-lg shadow-emerald-500/10"
         >
-          {copiedGs ? '✓ COPIED' : 'COPY CODE.GS'}
+          {copiedGs ? '✓ COPIED CODE' : 'Copy Bridge Script'}
         </button>
       </div>
     </div>
